@@ -10,7 +10,7 @@ Windows system tray battery monitor for the **Attack Shark R11 Ultra**.
 
 **[Download latest release](https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray/releases/latest)**
 
-![Tray icon and menu](assets/tray.png)
+![Tray icon and tooltip](assets/tray.png)
 
 ---
 
