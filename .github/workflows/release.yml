@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build release exe
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          $out = "dist"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $exe = "target/x86_64-pc-windows-msvc/release/R11UltraBattery.exe"
+          Copy-Item $exe "$out/R11UltraBattery.exe"
+          $hash = (Get-FileHash "$out/R11UltraBattery.exe" -Algorithm SHA256).Hash
+          $zip = "$out/R11UltraBattery-windows.zip"
+          Compress-Archive -Path "$out/R11UltraBattery.exe" -DestinationPath $zip -Force
+          @(
+            "# R11 Ultra Battery Tracker v$ver",
+            "",
+            "SHA256: $hash",
+            "",
+            "Single native Windows exe (Rust). Extract and run R11UltraBattery.exe."
+          ) | Set-Content -Path "$out/release-notes.txt" -Encoding utf8
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/R11UltraBattery-windows.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body_path: dist/release-notes.txt

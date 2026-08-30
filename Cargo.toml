@@ -1,0 +1,36 @@
+[package]
+name = "as_r11_ultra_battery_tray"
+version = "0.1.0"
+edition = "2021"
+description = "Windows system-tray battery monitor for Attack Shark R11 Ultra"
+license = "MIT"
+repository = "https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray"
+readme = "README.md"
+
+[[bin]]
+name = "R11UltraBattery"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+hidapi = { version = "2.6", default-features = false, features = ["windows-native"] }
+muda = "0.15"
+tao = "0.30"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tray-icon = "0.19"
+winreg = "0.52"
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+    "Win32_System_Threading",
+    "Win32_Security",
+] }
+
+[build-dependencies]
+winres = "0.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
