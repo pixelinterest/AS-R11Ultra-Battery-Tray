@@ -37,7 +37,7 @@ Bluetooth is not supported.
 
 ## Install
 
-1. Download **R11UltraBattery-windows.zip** from [Releases](https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray/releases/latest)
+1. Download **R11UltraBattery-{version}.zip** from [Releases](https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray/releases/latest) (e.g. `R11UltraBattery-1.0.1.zip`)
 2. Extract and run `R11UltraBattery.exe`
 
 ## Build from source

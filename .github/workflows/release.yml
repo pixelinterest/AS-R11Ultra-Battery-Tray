@@ -32,8 +32,10 @@ jobs:
           $exe = "target/x86_64-pc-windows-msvc/release/R11UltraBattery.exe"
           Copy-Item $exe "$out/R11UltraBattery.exe"
           $hash = (Get-FileHash "$out/R11UltraBattery.exe" -Algorithm SHA256).Hash
-          $zip = "$out/R11UltraBattery-windows.zip"
+          $zipName = "R11UltraBattery-$ver.zip"
+          $zip = "$out/$zipName"
           Compress-Archive -Path "$out/R11UltraBattery.exe" -DestinationPath $zip -Force
+          "ZIP_NAME=$zipName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           @(
             "# R11 Ultra Battery Tracker v$ver",
             "",
@@ -45,8 +47,7 @@ jobs:
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/R11UltraBattery-windows.zip
+          files: dist/${{ env.ZIP_NAME }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           body_path: dist/release-notes.txt
