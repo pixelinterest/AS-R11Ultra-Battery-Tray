@@ -1,6 +1,6 @@
 [package]
 name = "as_r11_ultra_battery_tray"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 description = "Windows system-tray battery monitor for Attack Shark R11 Ultra"
 license = "MIT"

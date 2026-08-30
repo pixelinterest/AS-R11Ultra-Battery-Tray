@@ -22,7 +22,7 @@ Windows system tray battery monitor for the **Attack Shark R11 Ultra**.
 - **Start with Windows** toggle (no admin required). Opening a newer build clears a stale startup entry — turn the option on again if you want it.
 - Polls every 30s; keeps the last reading up to 5 minutes on a missed poll
 - Supports 2.4 GHz dongle and USB-C charging
-- Single native exe — no Python or PyInstaller
+- Single native exe
 
 ## Supported modes
 
@@ -37,7 +37,7 @@ Bluetooth is not supported.
 
 ## Install
 
-1. Download **R11UltraBattery-{version}.zip** from [Releases](https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray/releases/latest) (e.g. `R11UltraBattery-1.0.1.zip`)
+1. Download **R11UltraBattery-1.0.2.zip** from [Releases](https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray/releases/latest)
 2. Extract and run `R11UltraBattery.exe`
 
 ## Build from source
