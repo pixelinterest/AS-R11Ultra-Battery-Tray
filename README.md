@@ -54,7 +54,31 @@ Output: `target\release\R11UltraBattery.exe`
 
 ```powershell
 R11UltraBattery.exe --once   # print battery to stdout
+R11UltraBattery.exe --json   # one-line JSON reading
 R11UltraBattery.exe --diag   # HID diagnostic dump
 ```
 
 Tray colors: edit constants in [`src/icon.rs`](src/icon.rs). Protocol: [`protocol.md`](protocol.md).
+
+## Linux and KDE Plasma
+
+The same binary reads the mouse on Linux and a Plasma 6 panel widget shows the percent. Bluetooth is still unsupported.
+
+Build dependencies: Rust, `pkg-config`, and `libudev`.
+
+```bash
+cargo build --release
+install -Dm755 target/release/R11UltraBattery ~/.local/bin/R11UltraBattery
+mkdir -p ~/.local/share/plasma/plasmoids
+cp -a plasmoid/com.pixelinterest.r11ultra.battery ~/.local/share/plasma/plasmoids/
+```
+
+HID access needs a seat udev rule (sudo). Copy [`udev/60-r11ultra-battery.rules`](udev/60-r11ultra-battery.rules) under that same name so it runs before systemd applies device access, then reload rules and replug the dongle or cable:
+
+```bash
+sudo install -Dm644 udev/60-r11ultra-battery.rules /etc/udev/rules.d/60-r11ultra-battery.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=hidraw
+```
+
+Restart Plasma (`systemctl --user restart plasma-plasmashell`) so it sees the new widget, then right-click the panel and choose **Add Widgets…** → **R11 Ultra Battery**. The widget runs `~/.local/bin/R11UltraBattery --json` every 30 seconds. Check a reading with `R11UltraBattery --once`.

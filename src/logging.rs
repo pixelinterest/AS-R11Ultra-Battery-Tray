@@ -11,10 +11,20 @@ const LOG_FILES_TO_KEEP: usize = 3;
 const MAX_LOG_FILE_BYTES: u64 = 256 * 1024;
 
 pub fn log_dir() -> PathBuf {
-    let base = std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| dirs_home());
-    base.join("R11UltraBattery")
+    log_base().join("R11UltraBattery")
+}
+
+fn log_base() -> PathBuf {
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        return PathBuf::from(local);
+    }
+    if let Some(state) = std::env::var_os("XDG_STATE_HOME") {
+        return PathBuf::from(state);
+    }
+    if let Some(home) = std::env::var_os("HOME") {
+        return PathBuf::from(home).join(".local").join("state");
+    }
+    dirs_home()
 }
 
 pub fn log_file_path() -> PathBuf {

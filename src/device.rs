@@ -189,12 +189,38 @@ pub fn poll_once() -> PollResult {
 
     if let Some(reading) = read_battery(&api, None) {
         result.reading = Some(reading);
-    } else if battery_collections(&api).is_empty() {
-        result.errors.push("No Compx R11 Ultra battery interface found".into());
     } else {
-        result.errors.push("Device found but battery query failed".into());
+        let collections = battery_collections(&api);
+        if collections.is_empty() {
+            result.errors.push("No Compx R11 Ultra battery interface found".into());
+        } else if let Some(hint) = open_error_hint(&collections) {
+            result.errors.push(hint);
+        } else {
+            result.errors.push("Device found but battery query failed".into());
+        }
     }
     result
+}
+
+fn open_error_hint(collections: &[HidCollection]) -> Option<String> {
+    let col = collections.first()?;
+    let c_path = CString::new(col.path.as_str()).ok()?;
+    let api = HidApi::new().ok()?;
+    match api.open_path(c_path.as_c_str()) {
+        Ok(_) => None,
+        Err(err) => {
+            let message = err.to_string();
+            let denied = message.to_ascii_lowercase().contains("permission");
+            if denied {
+                Some(format!(
+                    "Cannot open {} ({message}). Install udev/60-r11ultra-battery.rules and replug the mouse.",
+                    col.path
+                ))
+            } else {
+                Some(format!("Cannot open {}: {message}", col.path))
+            }
+        }
+    }
 }
 
 #[derive(Debug, Default)]

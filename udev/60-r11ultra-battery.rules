@@ -1,0 +1,2 @@
+# Let the logged-in seat user read the Attack Shark R11 Ultra battery HID interface.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="fb43|fb44", TAG+="uaccess"

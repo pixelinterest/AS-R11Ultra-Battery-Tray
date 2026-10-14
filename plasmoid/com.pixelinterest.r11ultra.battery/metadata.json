@@ -1,0 +1,19 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "pixelinterest"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Battery percent for the Attack Shark R11 Ultra",
+        "Icon": "input-mouse",
+        "Id": "com.pixelinterest.r11ultra.battery",
+        "License": "MIT",
+        "Name": "R11 Ultra Battery",
+        "Version": "1.0.2",
+        "Website": "https://github.com/pixelinterest/AS-R11Ultra-Battery-Tray"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "KPackageStructure": "Plasma/Applet"
+}
