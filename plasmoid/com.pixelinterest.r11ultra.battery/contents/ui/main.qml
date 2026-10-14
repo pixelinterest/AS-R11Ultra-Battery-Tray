@@ -2,8 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtCore
 
-import org.kde.kirigami as Kirigami
-import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.plasmoid
 
@@ -19,6 +18,13 @@ PlasmoidItem {
         return "'" + home.replace(/'/g, "'\\''") + "/.local/bin/R11UltraBattery' --json"
     }
 
+    readonly property bool onDesktop: Plasmoid.formFactor === PlasmaCore.Types.Planar
+    readonly property int pixelScale: onDesktop ? 4 : 2
+    readonly property int pixelPad: onDesktop ? 8 : 4
+    readonly property string readoutText: ok ? String(percent) + "%" : "--"
+    readonly property int chipWidth: (3 * readoutText.length + Math.max(0, readoutText.length - 1)) * pixelScale + pixelPad * 2
+    readonly property int chipHeight: 5 * pixelScale + pixelPad * 2
+
     property bool ok: false
     property int percent: 0
     property bool charging: false
@@ -26,7 +32,19 @@ PlasmoidItem {
     property var voltageMv: null
     property string errorText: ""
 
+    Layout.minimumWidth: chipWidth
+    Layout.minimumHeight: chipHeight
+    Layout.preferredWidth: chipWidth
+    Layout.preferredHeight: chipHeight
+    Layout.maximumWidth: chipWidth
+    Layout.maximumHeight: chipHeight
+
+    Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.icon: "input-mouse"
     preferredRepresentation: compactRepresentation
+    switchWidth: chipWidth
+    switchHeight: chipHeight
+
     toolTipMainText: i18n("R11 Ultra")
     toolTipSubText: {
         if (!ok) {
@@ -38,6 +56,22 @@ PlasmoidItem {
             line += " · " + voltageMv + " mV"
         }
         return line
+    }
+
+    function digitColor() {
+        if (!ok) {
+            return "#AAAAAA"
+        }
+        if (charging) {
+            return "#3498DB"
+        }
+        if (percent >= 50) {
+            return "#2ECC71"
+        }
+        if (percent >= 20) {
+            return "#E67E22"
+        }
+        return "#E74C3C"
     }
 
     function applyReading(stdout) {
@@ -66,24 +100,6 @@ PlasmoidItem {
         errorText = ""
     }
 
-    function percentColor() {
-        var background = Kirigami.Theme.backgroundColor
-        var light = (0.299 * background.r + 0.587 * background.g + 0.114 * background.b) > 0.6
-        if (!ok) {
-            return light ? "#464646" : "#AAAAAA"
-        }
-        if (charging) {
-            return light ? "#1565C0" : "#3498DB"
-        }
-        if (percent >= 50) {
-            return light ? "#1E8C3C" : "#2ECC71"
-        }
-        if (percent >= 20) {
-            return light ? "#D35400" : "#E67E22"
-        }
-        return light ? "#C0392B" : "#E74C3C"
-    }
-
     Plasma5Support.DataSource {
         id: batterySource
         engine: "executable"
@@ -99,39 +115,146 @@ PlasmoidItem {
         }
     }
 
+    component PixelReadout: Item {
+        id: readout
+
+        property string label: "100%"
+        property color glyphColor: "#2ECC71"
+        property int scale: 4
+        property int pad: 8
+
+        implicitWidth: (3 * label.length + Math.max(0, label.length - 1)) * scale + pad * 2
+        implicitHeight: 5 * scale + pad * 2
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 8
+            color: Qt.rgba(28 / 255, 28 / 255, 28 / 255, 0.3)
+        }
+
+        Canvas {
+            id: pixels
+            anchors.fill: parent
+
+            onPaint: {
+                var ctx = getContext("2d")
+                var text = readout.label
+                var scale = readout.scale
+                var pad = readout.pad
+                var w = width
+                var h = height
+                ctx.clearRect(0, 0, w, h)
+
+                var glyphs = {
+                    "0": [0b111, 0b101, 0b101, 0b101, 0b111],
+                    "1": [0b010, 0b110, 0b010, 0b010, 0b111],
+                    "2": [0b111, 0b001, 0b111, 0b100, 0b111],
+                    "3": [0b111, 0b001, 0b111, 0b001, 0b111],
+                    "4": [0b101, 0b101, 0b111, 0b001, 0b001],
+                    "5": [0b111, 0b100, 0b111, 0b001, 0b111],
+                    "6": [0b111, 0b100, 0b111, 0b101, 0b111],
+                    "7": [0b111, 0b001, 0b001, 0b001, 0b001],
+                    "8": [0b111, 0b101, 0b111, 0b101, 0b111],
+                    "9": [0b111, 0b101, 0b111, 0b001, 0b111],
+                    "%": [0b101, 0b001, 0b010, 0b100, 0b101],
+                    "-": [0b000, 0b000, 0b111, 0b000, 0b000]
+                }
+
+                var mask = new Array(w * h)
+                for (var i = 0; i < mask.length; i++) {
+                    mask[i] = 0
+                }
+                for (var gi = 0; gi < text.length; gi++) {
+                    var rows = glyphs[text.charAt(gi)]
+                    if (!rows) {
+                        continue
+                    }
+                    var gx = pad + gi * 4 * scale
+                    for (var row = 0; row < 5; row++) {
+                        for (var col = 0; col < 3; col++) {
+                            if ((rows[row] & (0b100 >> col)) === 0) {
+                                continue
+                            }
+                            for (var dy = 0; dy < scale; dy++) {
+                                for (var dx = 0; dx < scale; dx++) {
+                                    var x = gx + col * scale + dx
+                                    var y = pad + row * scale + dy
+                                    if (x >= 0 && y >= 0 && x < w && y < h) {
+                                        mask[y * w + x] = 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ctx.fillStyle = "rgba(18,18,18,0.92)"
+                for (var oy = 0; oy < h; oy++) {
+                    for (var ox = 0; ox < w; ox++) {
+                        if (mask[oy * w + ox]) {
+                            continue
+                        }
+                        var touch = false
+                        for (var ny = oy - 1; ny <= oy + 1 && !touch; ny++) {
+                            for (var nx = ox - 1; nx <= ox + 1; nx++) {
+                                if (nx >= 0 && ny >= 0 && nx < w && ny < h && mask[ny * w + nx]) {
+                                    touch = true
+                                    break
+                                }
+                            }
+                        }
+                        if (touch) {
+                            ctx.fillRect(ox, oy, 1, 1)
+                        }
+                    }
+                }
+
+                ctx.fillStyle = readout.glyphColor
+                for (var py = 0; py < h; py++) {
+                    for (var px = 0; px < w; px++) {
+                        if (mask[py * w + px]) {
+                            ctx.fillRect(px, py, 1, 1)
+                        }
+                    }
+                }
+            }
+        }
+
+        onLabelChanged: pixels.requestPaint()
+        onGlyphColorChanged: pixels.requestPaint()
+        onScaleChanged: pixels.requestPaint()
+        onWidthChanged: pixels.requestPaint()
+        onHeightChanged: pixels.requestPaint()
+        Component.onCompleted: pixels.requestPaint()
+    }
+
     compactRepresentation: Item {
-        implicitWidth: Math.ceil(percentLabel.implicitWidth + Kirigami.Units.smallSpacing * 2)
-        implicitHeight: Math.max(percentLabel.implicitHeight, Kirigami.Units.iconSizes.small)
+        implicitWidth: root.chipWidth
+        implicitHeight: root.chipHeight
 
-        PlasmaComponents.Label {
-            id: percentLabel
+        PixelReadout {
             anchors.centerIn: parent
-            text: root.ok ? root.percent + "%" : "—"
-            color: root.percentColor()
-            font.weight: Font.Medium
+            width: root.chipWidth
+            height: root.chipHeight
+            label: root.readoutText
+            glyphColor: root.digitColor()
+            scale: root.pixelScale
+            pad: root.pixelPad
         }
     }
 
-    fullRepresentation: ColumnLayout {
-        Layout.minimumWidth: Kirigami.Units.gridUnit * 10
-        Layout.minimumHeight: Kirigami.Units.gridUnit * 4
+    fullRepresentation: Item {
+        implicitWidth: root.chipWidth
+        implicitHeight: root.chipHeight
 
-        PlasmaComponents.Label {
-            Layout.alignment: Qt.AlignHCenter
-            text: root.ok ? root.percent + "%" : "—"
-            color: root.percentColor()
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 2
-            font.weight: Font.Medium
+        PixelReadout {
+            anchors.centerIn: parent
+            width: root.chipWidth
+            height: root.chipHeight
+            label: root.readoutText
+            glyphColor: root.digitColor()
+            scale: root.pixelScale
+            pad: root.pixelPad
         }
-
-        PlasmaComponents.Label {
-            Layout.alignment: Qt.AlignHCenter
-            text: root.toolTipSubText
-            wrapMode: Text.WordWrap
-        }
-    }
-
-    Component.onCompleted: {
-        Plasmoid.icon = "input-mouse"
     }
 }
